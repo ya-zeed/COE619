@@ -38,10 +38,10 @@ export default function EventList() {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <Link 
-                                        href={`/node/${event.edge_node_id}`}
+                                        href={`/node/${event.node_id}`}
                                         className="text-blue-600 hover:underline font-medium"
                                     >
-                                        Node ID: {event.edge_node_id}
+                                        Node ID: {event.node_id}
                                     </Link>
                                     <h3 className="font-semibold mt-2">{event.event_type}</h3>
                                     <p className="text-gray-600">{event.description}</p>

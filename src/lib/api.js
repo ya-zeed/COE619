@@ -41,7 +41,8 @@ export const api = {
   getAllEvents: async () => {
     try {
       const events = await fetchApi('/api/prod/all-events');
-      return events.filter(event => event.edge_node_id != null);
+
+      return events.filter(event => event.node_id != null);
     } catch (error) {
       console.error('Error fetching events:', error);
       return [];
@@ -59,7 +60,7 @@ export const api = {
   getNodeEvents: async (nodeId) => {
     try {
       const allEvents = await api.getAllEvents();
-      return allEvents.filter(event => event.edge_node_id === nodeId);
+      return allEvents.filter(event => event.node_id === nodeId);
     } catch (error) {
       console.error('Error fetching node events:', error);
       return [];

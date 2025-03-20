@@ -36,7 +36,7 @@ export default function Page() {
 
   function getEventsPerNode() {
     return nodesData.map(node => {
-      const count = eventsData.filter(event => event.edge_node_id === node.id).length;
+      const count = eventsData.filter(event => event.node_id === node.id).length;
       return { nodeName: node.name || node.id, events: count };
     });
   }
