@@ -18,7 +18,7 @@ export function DashboardMap({ nodes, selectedNodeId, onMarkerClick }) {
       </CardHeader>
       <CardContent className="flex-1 relative">
         <div className="absolute inset-0 p-4">
-          <MapComponent nodes={nodes} selectedNodeId={selectedNodeId} onMarkerClick={onMarkerClick} />
+          <MapComponent nodes={nodes} selectedNodeId={selectedNodeId} onMarkerClick={onMarkerClick}  />
         </div>
       </CardContent>
     </Card>

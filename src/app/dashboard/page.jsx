@@ -7,10 +7,8 @@ import { DashboardMap } from "@/components/dashboard/map"
 import { useState, useEffect } from 'react';
 import { AreaChartComponent } from "@/components/dashboard/area-chart"
 import { RadarChartComponent } from "@/components/dashboard/radar-chart"
-import { ScatterChartComponent } from "@/components/dashboard/scatter-chart"
-import { RadialBarChart } from "recharts"
-import { RadialBarChartComponent } from "@/components/dashboard/radial-chart"
 import { Counter } from "@/components/dashboard/counter"
+import { io } from "socket.io-client"
 
 export default function Page() {
   const [nodesData, setNodesData] = useState([]);
@@ -81,7 +79,14 @@ export default function Page() {
   const eventsPerMonth = groupEventsByMonth();
   const areaChartData = getCumulativeEventsByMonth();
   const radarChartData = getRadarData();
-  const eventsPerNode = getEventsPerNode()
+
+  // log io emit new notification
+  useEffect(() => {
+    const socket = io();
+    socket.on('new-notification', (data) => {
+      console.log(data);
+    });
+  }, []);
 
 
   const chartConfig = {
