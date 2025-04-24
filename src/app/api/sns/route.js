@@ -1,4 +1,14 @@
 import { NextResponse } from 'next/server';
+import Pusher from 'pusher';
+
+// Initialize Pusher server
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID,
+  key: process.env.NEXT_PUBLIC_PUSHER_KEY,
+  secret: process.env.PUSHER_SECRET,
+  cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+  encrypted: true
+});
 
 export async function POST(request) {
   let message;
@@ -42,11 +52,10 @@ export async function POST(request) {
         // Message is not JSON
       }
 
-      // --- YOUR MESSAGE PROCESSING LOGIC GOES HERE ---
-      // ... process parsedPayload ...
-      console.log('Received and processing notification:', parsedPayload);
-      // ---------------------------------------------
+      // Emit the event through Pusher
+      await pusher.trigger('events', 'new-event', parsedPayload);
 
+      console.log('Received and processing notification:', parsedPayload);
       return NextResponse.json({ message: 'Notification received and processed' });
 
 

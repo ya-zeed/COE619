@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { NodeEventsChart } from "@/components/dashboard/node-events-chart"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Activity, AlertCircle, Clock, List, MapPin, Server } from "lucide-react"
+import pusher from "@/lib/pusher"
 
 export default function Page() {
   const [nodesData, setNodesData] = useState([]);
@@ -32,12 +33,28 @@ export default function Page() {
       }
     };
     fetchData();
+
+    // Subscribe to Pusher channels
+    const eventsChannel = pusher.subscribe('events');
+
+    // Listen for new events
+    eventsChannel.bind('new-event', async (data) => {
+      const [nodes, events] = await Promise.all([
+        api.getAllNodes(),
+        api.getAllEvents()
+      ]);
+      setNodesData(nodes);
+      setEventsData(events);
+    });
+
+    // Cleanup subscription on component unmount
+    return () => {
+      eventsChannel.unsubscribe();
+    };
   }, []);
 
   function getEventsPerNode() {
     return nodesData.map(node => {
-      console.log(node);
-      
       const count = eventsData.filter(event => event.node_id === node.node_id).length;
       return { nodeName: node.name || node.id, events: count };
     });

@@ -1,0 +1,9 @@
+import Pusher from 'pusher-js';
+
+// Initialize Pusher client
+const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+  cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+  encrypted: true
+});
+
+export default pusher; 
