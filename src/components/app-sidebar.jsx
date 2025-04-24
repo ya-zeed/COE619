@@ -28,9 +28,9 @@ const data = {
   },
   teams: [
     {
-      name: "Acme Inc",
+      name: "COE619 Project",
       logo: GalleryVerticalEnd,
-      plan: "Enterprise",
+      plan: "",
     }
   ],
   projects: [
@@ -63,9 +63,6 @@ export function AppSidebar({
       <SidebarContent>
         <NavProjects projects={data.projects} />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={data.user} />
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>)
   );
