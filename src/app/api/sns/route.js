@@ -19,6 +19,9 @@ export async function POST(request) {
      return NextResponse.json({ message: 'Invalid JSON' }, { status: 400 });
    }
 
+   console.log({message});
+   
+
   try {
     if (message.Type === 'SubscriptionConfirmation') {
       const subscribeUrl = message.SubscribeURL;
