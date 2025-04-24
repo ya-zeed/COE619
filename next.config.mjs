@@ -4,7 +4,7 @@ const nextConfig = {
         return [
             {
                 source: '/api/prod/:path*',
-                destination: process.env.NEXT_PUBLIC_API_BASE_URL + "/api/prod/:path*" || '*',
+                destination: process.env.NEXT_PUBLIC_API_BASE_URL + "/prod/:path*" || '*',
             },
         ];
     },
