@@ -60,7 +60,7 @@ const columns = [
     header: "Status",
     cell: ({ row }) => (
       <div className={`h-3 w-3 rounded-full ${
-        row.getValue("node_status") === "active" ? "bg-green-500" : "bg-red-500"
+        row.getValue("node_status") === "online" ? "bg-green-500" : "bg-red-500"
       }`} />
     ),
   },

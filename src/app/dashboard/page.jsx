@@ -5,14 +5,14 @@ import { NodesTable } from "@/components/dashboard/nodes-table"
 import api from "@/lib/api"
 import { DashboardMap } from "@/components/dashboard/map"
 import { useState, useEffect } from 'react';
-import { AreaChartComponent } from "@/components/dashboard/area-chart"
-import { RadarChartComponent } from "@/components/dashboard/radar-chart"
-import { Counter } from "@/components/dashboard/counter"
-import { io } from "socket.io-client"
+import { NodeEventsChart } from "@/components/dashboard/node-events-chart"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Activity, AlertCircle, Clock, List, MapPin, Server } from "lucide-react"
 
 export default function Page() {
   const [nodesData, setNodesData] = useState([]);
   const [eventsData, setEventsData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,6 +27,8 @@ export default function Page() {
         console.error('Error fetching data:', error);
         setNodesData([]);
         setEventsData([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -34,7 +36,9 @@ export default function Page() {
 
   function getEventsPerNode() {
     return nodesData.map(node => {
-      const count = eventsData.filter(event => event.node_id === node.id).length;
+      console.log(node);
+      
+      const count = eventsData.filter(event => event.node_id === node.node_id).length;
       return { nodeName: node.name || node.id, events: count };
     });
   }
@@ -44,7 +48,6 @@ export default function Page() {
     eventsData.forEach(event => {
       if (event.event_timestamp) {
         const date = new Date(event.event_timestamp * 1000);
-        // Get abbreviated month name, e.g., "Jan"
         const month = date.toLocaleString('default', { month: 'short' });
         monthMap[month] = (monthMap[month] || 0) + 1;
       }
@@ -52,20 +55,18 @@ export default function Page() {
     return Object.keys(monthMap).map(month => ({ month, events: monthMap[month] }));
   }
 
-  function getRadarData() {
-    const eventsPerNode = getEventsPerNode(nodesData, eventsData);
+  function getNodeEventsData() {
+    const eventsPerNode = getEventsPerNode();
     const maxCount = Math.max(...eventsPerNode.map(item => item.events)) || 1;
     return eventsPerNode.map(item => ({
       subject: item.nodeName,
-      EventCount: item.events,
-      // "Relative" is expressed as a percentage of the maximum event count
+      A: item.events,
       Relative: Math.round((item.events / maxCount) * 100)
     }));
   }
 
   function getCumulativeEventsByMonth() {
     const grouped = groupEventsByMonth(eventsData);
-    // Ensure months are sorted in calendar order
     const monthOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     grouped.sort((a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month));
     let cumulative = 0;
@@ -75,53 +76,148 @@ export default function Page() {
     });
   }
 
-
   const eventsPerMonth = groupEventsByMonth();
   const areaChartData = getCumulativeEventsByMonth();
-  const radarChartData = getRadarData();
+  const nodeEventsData = getNodeEventsData();
+  
 
-  // log io emit new notification
-  useEffect(() => {
-    const socket = io();
-    socket.on('new-notification', (data) => {
-      console.log(data);
-    });
-  }, []);
+  const activeNodes = nodesData.filter(node => node.node_status === 'online').length;
+  const totalNodes = nodesData.length;
+  const recentEvents = eventsData.slice(-5).reverse();
 
-
-  const chartConfig = {
-    events: {
-      label: "events",
-      color: "hsl(var(--chart-1))",
-    },
-  };
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-        <div className="aspect-video rounded-xl bg-muted/50">
-          <BarChartComponent
-            data={eventsPerMonth}
-            config={chartConfig} />
-        </div>
-        <div className="aspect-video rounded-xl bg-muted/50">
-          <Counter count={eventsData.length} />
-        </div>
-        <div className="aspect-video rounded-xl bg-muted/50">
-          <DashboardMap nodes={nodesData} />
-        </div>
+      {/* Overview Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{eventsData.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {eventsData.length > 0 ? 
+                `Last event: ${new Date(eventsData[eventsData.length - 1].event_timestamp * 1000).toLocaleString()}` : 
+                'No events recorded'
+              }
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Nodes</CardTitle>
+            <Server className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeNodes}/{totalNodes}</div>
+            <p className="text-xs text-muted-foreground">+2 new nodes this month</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Event Types</CardTitle>
+            <List className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{new Set(eventsData.map(event => event.event_type)).size}</div>
+            <p className="text-xs text-muted-foreground">
+              {eventsData.length > 0 ? 
+                `Unique event types recorded` : 
+                'No event types recorded'
+              }
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Events Today</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{eventsData.filter(event => {
+              const eventDate = new Date(event.event_timestamp * 1000);
+              const today = new Date();
+              return eventDate.toDateString() === today.toDateString();
+            }).length}</div>
+            <p className="text-xs text-muted-foreground">Events recorded today</p>
+          </CardContent>
+        </Card>
       </div>
-      <div className="grid auto-rows-min gap-4 md:grid-cols-2">
-        <div className="aspect-video rounded-xl bg-muted/50">
-          <AreaChartComponent data={areaChartData} />
-        </div>
-        <div className="aspect-video rounded-xl bg-muted/50">
-          <RadarChartComponent data={radarChartData} />
-        </div>
+
+      {/* Main Charts */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Events Overview</CardTitle>
+            <CardDescription>Monthly event distribution and trends</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BarChartComponent data={eventsPerMonth} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Node Events Distribution</CardTitle>
+            <CardDescription>Event count per node</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <NodeEventsChart data={nodeEventsData} />
+          </CardContent>
+        </Card>
       </div>
-      <div className="min-h-[100vh] flex-1 rounded-xl md:min-h-min">
-        <NodesTable data={nodesData} />
+
+      {/* Map and Recent Events */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Node Locations</CardTitle>
+            <CardDescription>Real-time node status and locations</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[400px]">
+            <DashboardMap nodes={nodesData} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Events</CardTitle>
+            <CardDescription>Latest events from all nodes</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentEvents.map((event) => (
+                <div key={event.id} className="flex items-center space-x-4">
+                  <div className="h-2 w-2 rounded-full bg-green-500" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{event.node_id}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(event.event_timestamp * 1000).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {event.event_type}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Nodes Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>All Nodes</CardTitle>
+          <CardDescription>Detailed information about all nodes</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <NodesTable data={nodesData} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
